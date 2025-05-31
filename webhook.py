@@ -48,16 +48,23 @@ async def on_shutdown(_: Dispatcher):
 # ─── aiohttp application factory ─────────────────────────────────────────────
 def build_app() -> web.Application:
     app = web.Application()
-    # handler that routes Telegram POSTs to the dispatcher
+
+    # Telegram webhook handler
     SimpleRequestHandler(
         dispatcher=dp,
         bot=bot,
     ).register(app, path=WEBHOOK_PATH)
 
-    # tell aiogram to plug its startup/shutdown into aiohttp’s lifecycle
+    # 🔹 Health endpoint — returns 200 OK
+    async def root(request):
+        return web.Response(text="OK")        # hit / or /healthz
+
+    app.router.add_get("/", root)
+    app.router.add_get("/healthz", root)
+
     setup_application(
         app,
-        dp,                     # ← dispatcher is REQUIRED positional arg
+        dp,
         bot=bot,
         on_startup=[on_startup],
         on_shutdown=[on_shutdown],
